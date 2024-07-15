@@ -68,6 +68,7 @@ using std::cosh;
 using std::sinh;
 using std::tanh;
 using std::erf;
+using std::erfc;
 using std::hypot;
 
 //=====================================================================================================================
@@ -106,6 +107,7 @@ struct SqrtOp    {};  // SQUARE ROOT OPERATOR
 struct PowOp     {};  // POWER OPERATOR
 struct AbsOp     {};  // ABSOLUTE OPERATOR
 struct ErfOp     {};  // ERROR FUNCTION OPERATOR
+struct ErfcOp     {};  // ERRORC FUNCTION OPERATOR
 struct Hypot2Op  {};  // 2D HYPOT OPERATOR
 struct Hypot3Op  {};  // 3D HYPOT OPERATOR
 
@@ -198,6 +200,10 @@ using AbsExpr = UnaryExpr<AbsOp, R>;
 
 template<typename R>
 using ErfExpr = UnaryExpr<ErfOp, R>;
+
+template<typename R>
+using ErfcExpr = UnaryExpr<ErfcOp, R>;
+
 
 template<typename L, typename R>
 using Hypot2Expr = BinaryExpr<Hypot2Op, L, R>;
@@ -908,6 +914,8 @@ template<typename R, Requires<isExpr<R>> = true> AUTODIFF_DEVICE_FUNC constexpr 
 template<typename R, Requires<isExpr<R>> = true> AUTODIFF_DEVICE_FUNC constexpr auto real(R&& r) { return std::forward<R>(r); }
 template<typename R, Requires<isExpr<R>> = true> AUTODIFF_DEVICE_FUNC constexpr auto imag(R&&) { return 0.0; }
 template<typename R, Requires<isExpr<R>> = true> AUTODIFF_DEVICE_FUNC constexpr auto erf(R&& r) -> ErfExpr<R> { return { r }; }
+template<typename R, Requires<isExpr<R>> = true> AUTODIFF_DEVICE_FUNC constexpr auto erfc(R&& r) -> ErfcExpr<R> { return { r }; }
+
 
 template<typename L, typename R, Requires<isOperable<L, R>> = true>
 AUTODIFF_DEVICE_FUNC constexpr auto min(L&& l, R&& r)
@@ -1677,6 +1685,17 @@ AUTODIFF_DEVICE_FUNC constexpr void apply(Dual<T, G>& self, ErfOp)
     self.val = erf(aux);
     self.grad *= 2.0 * exp(-aux*aux)/sqrt_pi;
 }
+
+template<typename T, typename G>
+AUTODIFF_DEVICE_FUNC constexpr void apply(Dual<T, G>& self, ErfcOp)
+{
+    constexpr NumericType<T> sqrt_pi = 1.7724538509055160272981674833411451872554456638435;
+    const T aux = self.val;
+    self.val = erfc(aux);
+    self.grad *= -2.0 * exp(-aux*aux)/sqrt_pi;
+}
+
+
 
 template<typename Op, typename T, typename G>
 AUTODIFF_DEVICE_FUNC constexpr void apply(Dual<T, G>& self)
